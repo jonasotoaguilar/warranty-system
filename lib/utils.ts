@@ -7,7 +7,7 @@ export function cn(...inputs: ClassValue[]) {
 
 export function formatRut(value: string) {
   // Eliminar todo lo que no sea números o K
-  let actual = value.replace(/^0+|[^0-9kK]+/g, "").toUpperCase();
+  let actual = value.replaceAll(/(^0+)|([^0-9kK]+)/g, "").toUpperCase();
 
   if (actual.length === 0) return "";
 
@@ -19,14 +19,14 @@ export function formatRut(value: string) {
   if (actual.length < 2) return actual;
 
   // Formatear cuerpo con puntos
-  cuerpo = cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  cuerpo = cuerpo.replaceAll(/\B(?=(\d{3})+(?!\d))/g, ".");
 
   return `${cuerpo}-${dv}`;
 }
 
 export function formatChileanPhone(value: string) {
   // Eliminar todo lo que no sea números
-  let raw = value.replace(/\D/g, "");
+  let raw = value.replaceAll(/\D/g, "");
 
   // Si está vacío, devolver vacío
   if (!raw) return "";

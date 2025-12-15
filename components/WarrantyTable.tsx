@@ -3,8 +3,6 @@
 import { differenceInBusinessDays, parseISO } from "date-fns";
 import { Warranty } from "@/lib/types";
 import { Badge } from "./ui/badge";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
 import { Button } from "./ui/button";
 import { Pencil, Eye, Trash2 } from "lucide-react";
 
@@ -20,7 +18,7 @@ export function WarrantyTable({
   onEdit,
   onView,
   onDelete,
-}: WarrantyTableProps) {
+}: Readonly<WarrantyTableProps>) {
   const getStatusBadge = (status: Warranty["status"]) => {
     switch (status) {
       case "ready":
@@ -55,6 +53,7 @@ export function WarrantyTable({
           : new Date();
       return differenceInBusinessDays(end, start);
     } catch (e) {
+      console.error(e);
       return 0;
     }
   };
