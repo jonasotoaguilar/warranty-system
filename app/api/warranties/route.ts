@@ -53,6 +53,7 @@ export async function POST(request: Request) {
     await saveWarranty(newWarranty);
     return NextResponse.json(newWarranty, { status: 201 });
   } catch (e) {
+    console.error(e);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }
@@ -75,6 +76,7 @@ export async function PUT(request: Request) {
     await updateWarranty(body);
     return NextResponse.json(body, { status: 200 });
   } catch (e) {
+    console.error(e);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }
@@ -94,6 +96,7 @@ export async function DELETE(request: Request) {
     await deleteWarranty(id);
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (e) {
+    console.error(e);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }

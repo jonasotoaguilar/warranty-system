@@ -1,1 +1,4 @@
 node_modules
+warranty-system.code-workspace
+/lib/generated/prisma
+.env

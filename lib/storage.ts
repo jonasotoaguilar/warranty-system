@@ -1,59 +1,81 @@
-import fs from "fs/promises";
-import path from "path";
-import { Warranty } from "./types";
+import { prisma } from "@/lib/prisma";
+import { Warranty, WarrantyStatus } from "./types";
 
-const DATA_FILE_PATH = path.join(process.cwd(), "data", "warranties.json");
-
-// Helper to ensure directory exists
-async function ensureDir() {
-  try {
-    await fs.access(path.dirname(DATA_FILE_PATH));
-  } catch {
-    await fs.mkdir(path.dirname(DATA_FILE_PATH), { recursive: true });
-  }
+// Helper to convert Prisma result to Warranty type (Dates to strings)
+function mapToWarranty(item: any): Warranty {
+  return {
+    ...item,
+    entryDate: item.entryDate.toISOString(),
+    deliveryDate: item.deliveryDate
+      ? item.deliveryDate.toISOString()
+      : undefined,
+    readyDate: item.readyDate ? item.readyDate.toISOString() : undefined,
+    status: item.status as WarrantyStatus,
+  };
 }
 
 export async function getWarranties(): Promise<Warranty[]> {
-  try {
-    await ensureDir();
-    const data = await fs.readFile(DATA_FILE_PATH, "utf-8");
-    return JSON.parse(data);
-  } catch (error) {
-    // If file doesn't exist or error, return empty array (or default)
-    return [];
-  }
+  const items = await prisma.warranty.findMany({
+    orderBy: { entryDate: "desc" },
+  });
+  return items.map(mapToWarranty);
 }
 
 export async function saveWarranty(warranty: Warranty): Promise<void> {
-  const warranties = await getWarranties();
-  warranties.push(warranty);
-  await fs.writeFile(
-    DATA_FILE_PATH,
-    JSON.stringify(warranties, null, 2),
-    "utf-8"
-  );
+  await prisma.warranty.create({
+    data: {
+      id: warranty.id,
+      invoiceNumber: warranty.invoiceNumber,
+      clientName: warranty.clientName,
+      rut: warranty.rut,
+      contact: warranty.contact,
+      email: warranty.email,
+      product: warranty.product,
+      failureDescription: warranty.failureDescription,
+      sku: warranty.sku,
+      location: warranty.location,
+      entryDate: new Date(warranty.entryDate),
+      deliveryDate: warranty.deliveryDate
+        ? new Date(warranty.deliveryDate)
+        : null,
+      readyDate: warranty.readyDate ? new Date(warranty.readyDate) : null,
+      status: warranty.status,
+      repairCost: warranty.repairCost,
+      notes: warranty.notes,
+    },
+  });
 }
 
 export async function updateWarranty(updatedWarranty: Warranty): Promise<void> {
-  const warranties = await getWarranties();
-  const index = warranties.findIndex((w) => w.id === updatedWarranty.id);
-  if (index !== -1) {
-    warranties[index] = updatedWarranty;
-    await fs.writeFile(
-      DATA_FILE_PATH,
-      JSON.stringify(warranties, null, 2),
-      "utf-8"
-    );
-  }
+  await prisma.warranty.update({
+    where: { id: updatedWarranty.id },
+    data: {
+      invoiceNumber: updatedWarranty.invoiceNumber,
+      clientName: updatedWarranty.clientName,
+      rut: updatedWarranty.rut,
+      contact: updatedWarranty.contact,
+      email: updatedWarranty.email,
+      product: updatedWarranty.product,
+      failureDescription: updatedWarranty.failureDescription,
+      sku: updatedWarranty.sku,
+      location: updatedWarranty.location,
+      // entryDate usually doesn't change, but we map it anyway
+      entryDate: new Date(updatedWarranty.entryDate),
+      deliveryDate: updatedWarranty.deliveryDate
+        ? new Date(updatedWarranty.deliveryDate)
+        : null,
+      readyDate: updatedWarranty.readyDate
+        ? new Date(updatedWarranty.readyDate)
+        : null,
+      status: updatedWarranty.status,
+      repairCost: updatedWarranty.repairCost,
+      notes: updatedWarranty.notes,
+    },
+  });
 }
 
-// Delete a warranty
 export async function deleteWarranty(id: string): Promise<void> {
-  const warranties = await getWarranties();
-  const newWarranties = warranties.filter((w) => w.id !== id);
-  await fs.writeFile(
-    DATA_FILE_PATH,
-    JSON.stringify(newWarranties, null, 2),
-    "utf-8"
-  );
+  await prisma.warranty.delete({
+    where: { id },
+  });
 }
