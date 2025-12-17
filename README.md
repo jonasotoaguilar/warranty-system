@@ -9,8 +9,9 @@ El proyecto está construido con un stack tecnológico moderno y robusto:
 - **Framework Principal**: [Next.js 14](https://nextjs.org/) (App Router)
 - **Lenguaje**: [TypeScript](https://www.typescriptlang.org/)
 - **Estilos**: [Tailwind CSS](https://tailwindcss.com/)
-- **Base de Datos**: [SQLite](https://www.sqlite.org/) (Entorno local)
+- **Base de Datos**: [PostgreSQL](https://www.postgresql.org/) (vía [Supabase](https://supabase.com/))
 - **ORM**: [Prisma](https://www.prisma.io/)
+- **Containerización**: [Docker](https://www.docker.com/) & Docker Compose
 - **Iconos**: [Lucide React](https://lucide.dev/)
 - **Manejo de Fechas**: [date-fns](https://date-fns.org/)
 
@@ -27,7 +28,13 @@ El proyecto está construido con un stack tecnológico moderno y robusto:
 - **Ubicaciones**: Gestión dinámica de la ubicación física del producto (Recepción, Taller, Bodega, etc.).
 - **Búsqueda y Paginación**: Filtrado rápido por cliente, producto o número de boleta, con navegación paginada.
 
-## 🛠️ Instalación y Configuración
+## 🛠️ Requisitos Previos
+
+- [Node.js](https://nodejs.org/) (v18 o superior)
+- [Docker](https://www.docker.com/) (Opcional, para despliegue containerizado)
+- Cuenta en [Supabase](https://supabase.com/) (o instancia local de Supabase)
+
+## ⚙️ Configuración del Entorno
 
 1.  **Clonar el repositorio**
 
@@ -36,39 +43,45 @@ El proyecto está construido con un stack tecnológico moderno y robusto:
     cd warranty-system
     ```
 
-2.  **Instalar dependencias**
+2.  **Configurar Variables de Entorno**
+
+    Crea un archivo `.env` en la raíz del proyecto. Puedes usar el siguiente template:
+
+    ```env
+    # Conexión a Base de Datos (Supabase Transaction Pooler recomendado para Serverless/Docker)
+    DATABASE_URL="postgresql://postgres:[PASSWORD]@[HOST]:[PORT]/[DB_NAME]?pgbouncer=true"
+
+    # URL Directa (Para migraciones)
+    DIRECT_URL="postgresql://postgres:[PASSWORD]@[HOST]:[PORT]/[DB_NAME]"
+
+    # Supabase Auth & Public
+    NEXT_PUBLIC_SUPABASE_URL="https://[PROJECT-ID].supabase.co"
+    NEXT_PUBLIC_SUPABASE_ANON_KEY="[YOUR-ANON-KEY]"
+    ```
+
+3.  **Instalar dependencias**
 
     ```bash
     npm install
     ```
 
-3.  **Configurar Variables de Entorno**
-
-    Crea un archivo `.env` en la raíz del proyecto basándote en el ejemplo (o simplemente definiendo la URL de la base de datos local):
-
-    ```env
-    DATABASE_URL="file:./dev.db"
-    ```
-
 4.  **Inicializar la Base de Datos**
 
-    Ejecuta las migraciones de Prisma para crear las tablas:
+    Sincroniza el esquema de Prisma con tu base de datos en Supabase:
 
     ```bash
     npx prisma migrate dev --name init
     ```
 
-5.  **Poblar con Datos de Prueba (Opcional)**
-
-    Puedes ejecutar el script de seed para cargar datos ficticios:
+    _(Opcional) Poblar con datos de prueba:_
 
     ```bash
     npx tsx prisma/seed-dummy.ts
     ```
 
-## ▶️ Ejecución
+## ▶️ Ejecución en Desarrollo
 
-Para iniciar el servidor de desarrollo:
+Para iniciar el servidor de desarrollo localmente:
 
 ```bash
 npm run dev
@@ -76,12 +89,31 @@ npm run dev
 
 La aplicación estará disponible en `http://localhost:3000`.
 
+## 🐳 Ejecución con Docker
+
+El proyecto incluye configuración lista para producción usando Docker.
+
+1.  **Asegúrate de tener el archivo `.env` configurado correctamente.**
+
+2.  **Construir y levantar el contenedor:**
+
+    ```bash
+    docker-compose up -d --build
+    ```
+
+    Esto iniciará la aplicación en el puerto **3001** en modo producción optimizado (Standalone).
+
+3.  **Ver logs:**
+    ```bash
+    docker-compose logs -f
+    ```
+
 ## 📁 Estructura del Proyecto
 
 - `/app`: Rutas y páginas de Next.js (App Router).
 - `/components`: Componentes de React reutilizables (Modales, Tablas, UI Kit).
-- `/lib`: Utilidades, tipos y configuración de Prisma.
-- `/prisma`: Esquema de base de datos y scripts de seed.
+- `/lib`: Utilidades, clientes de Supabase/Prisma y helpers.
+- `/prisma`: Esquema de base de datos (`schema.prisma`) y scripts de seed.
 - `/public`: Archivos estáticos.
 
 ## 🤝 Contribución
