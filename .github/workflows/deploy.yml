@@ -1,30 +1,35 @@
-name: Build Docker images
+name: Build and Push Docker Image
 
 on:
   push:
     branches: ["main"]
+    tags:
+      - "v*.*.*"
 
 jobs:
   build-and-push-dockerfile-image:
     runs-on: ubuntu-latest
     steps:
+      # 1. Clonar el repositorio
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Log in to Docker Hub
+      # 2. Login en GitHub Container Registry
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v2
         with:
-          # Asegúrate de agregar estos secretos en la configuración de tu repositorio
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 3. Construir y pushear la imagen
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: ./Dockerfile # Ruta a tu Dockerfile
+          file: ./Dockerfile
           push: true
-          # Reemplaza 'namespace/example' con tu propio namespace y nombre de repositorio
-          tags: | 
-            jonathansotoa/warranty-system:latest 
+          tags: |
+            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ github.ref_name }}
           platforms: linux/amd64
