@@ -46,7 +46,9 @@ export async function signup(formData: FormData) {
   }
 
   revalidatePath("/", "layout");
-  redirect("/");
+  redirect(
+    "/login?message=Por favor, revisa tu correo electrónico para confirmar tu cuenta."
+  );
 }
 
 export async function signout() {
