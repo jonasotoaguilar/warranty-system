@@ -29,8 +29,9 @@ export function WarrantyModal({
     return availableLocations;
   }, [availableLocations]);
 
+  const isEditing = !!warrantyToEdit;
   const isLocked =
-    !!warrantyToEdit &&
+    isEditing &&
     warrantyToEdit.status === "completed" &&
     (formData.status ?? warrantyToEdit.status) === "completed";
 
@@ -161,7 +162,7 @@ export function WarrantyModal({
               <Input
                 required
                 autoFocus
-                disabled={isLocked}
+                disabled={isLocked || isEditing}
                 placeholder="123456"
                 value={formData.invoiceNumber || ""}
                 onChange={(e) =>
@@ -195,7 +196,7 @@ export function WarrantyModal({
                 Cliente *
               </span>
               <Input
-                disabled={isLocked}
+                disabled={isLocked || isEditing}
                 required
                 placeholder="Nombre completo"
                 value={formData.clientName || ""}
@@ -209,7 +210,7 @@ export function WarrantyModal({
                 RUT *
               </span>
               <Input
-                disabled={isLocked}
+                disabled={isLocked || isEditing}
                 required
                 placeholder="12.345.678-9"
                 value={formData.rut || ""}
@@ -232,7 +233,7 @@ export function WarrantyModal({
                 onChange={handlePhoneChange}
                 maxLength={15}
                 pattern="\+56 9 \d{4} \d{4}"
-                title="El teléfono debe tener el formato: +56 9 1234 5678"
+                title="Rellene el campo con el formato: +56 9 XXXX XXXX"
               />
             </label>
             <label className="grid gap-2 text-zinc-900 dark:text-zinc-100">
@@ -259,7 +260,7 @@ export function WarrantyModal({
                 Producto *
               </span>
               <Input
-                disabled={isLocked}
+                disabled={isLocked || isEditing}
                 required
                 placeholder="Nombre del producto"
                 value={formData.product || ""}

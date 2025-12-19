@@ -23,7 +23,7 @@ export function WarrantyTable({
     switch (status) {
       case "ready":
         return (
-          <Badge className="bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:text-white">
+          <Badge className="bg-green-500 dark:bg-green-600 dark:text-white">
             Lista
           </Badge>
         );
@@ -31,7 +31,7 @@ export function WarrantyTable({
         return <Badge variant="warning">Pendiente</Badge>;
       case "completed":
         return (
-          <Badge className="bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-800 dark:text-emerald-100">
+          <Badge className="bg-emerald-700 dark:bg-emerald-800 dark:text-emerald-100">
             Completada
           </Badge>
         );
@@ -60,10 +60,10 @@ export function WarrantyTable({
 
   const getDaysBadgeColor = (days: number) => {
     if (days >= 15)
-      return "bg-red-500 text-white hover:bg-red-600 dark:bg-red-900 dark:text-red-100";
+      return "bg-red-500 text-white dark:bg-red-900 dark:text-red-100";
     if (days >= 10)
-      return "bg-orange-500 text-white hover:bg-orange-600 dark:bg-orange-800 dark:text-orange-100";
-    return "bg-green-500 text-white hover:bg-green-600 dark:bg-green-700 dark:text-green-100";
+      return "bg-yellow-500 text-black dark:bg-yellow-600 dark:text-white";
+    return "bg-green-500 text-white dark:bg-green-700 dark:text-green-100";
   };
 
   if (warranties.length === 0) {
@@ -134,14 +134,16 @@ export function WarrantyTable({
                     >
                       <Eye className="h-4 w-4 text-zinc-500" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => onEdit(warranty)}
-                      title="Editar"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
+                    {warranty.status !== "completed" && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onEdit(warranty)}
+                        title="Editar"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="icon"

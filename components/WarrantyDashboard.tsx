@@ -3,6 +3,7 @@
 import { signout } from "@/app/auth/actions";
 
 import { useEffect, useState, useCallback } from "react";
+import { getLocations } from "@/app/actions/locations";
 import { Warranty, WarrantyStatus } from "@/lib/types";
 import { WarrantyTable } from "./WarrantyTable";
 import { WarrantyModal } from "./WarrantyModal";
@@ -16,7 +17,9 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
+  MapPin,
 } from "lucide-react";
+import Link from "next/link";
 import { Input } from "./ui/input";
 
 export function WarrantyDashboard() {
@@ -38,13 +41,14 @@ export function WarrantyDashboard() {
 
   const [editingWarranty, setEditingWarranty] = useState<Warranty | null>(null);
   const [viewingWarranty, setViewingWarranty] = useState<Warranty | null>(null);
-  const [locations, setLocations] = useState<string[]>([
-    "Recepcion",
-    "Taller",
-    "Bodega",
-    "Proveedor",
-    "Cliente",
-  ]);
+  const [locations, setLocations] = useState<string[]>([]);
+
+  const fetchLocations = useCallback(async () => {
+    const result = await getLocations();
+    if (result.data) {
+      setLocations(result.data.map((l) => l.name));
+    }
+  }, []);
 
   const fetchWarranties = useCallback(async () => {
     setIsLoading(true);
@@ -64,13 +68,6 @@ export function WarrantyDashboard() {
 
         setWarranties(data);
         setTotalPages(Math.max(1, Math.ceil(total / 20)));
-
-        // Sincronizar ubicaciones dinámicas "aprendidas"
-        const dataLocs = data.map((w) => w.location);
-        setLocations((prev) => {
-          const combined = new Set([...prev, ...dataLocs]);
-          return Array.from(combined).filter(Boolean);
-        });
       }
     } catch (e) {
       console.error("Error fetching warranties", e);
@@ -86,6 +83,10 @@ export function WarrantyDashboard() {
     }, 300);
     return () => clearTimeout(timer);
   }, [fetchWarranties]);
+
+  useEffect(() => {
+    fetchLocations();
+  }, [fetchLocations]);
 
   // Reset página al cambiar filtros (si cambia search o status)
   useEffect(() => {
@@ -105,23 +106,6 @@ export function WarrantyDashboard() {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setTimeout(() => setEditingWarranty(null), 300);
-  };
-
-  const handleAddLocation = (newLoc: string) => {
-    if (!locations.includes(newLoc)) {
-      setLocations([...locations, newLoc]);
-    }
-  };
-
-  const handleDeleteLocation = (locToDelete: string) => {
-    const isInUse = warranties.some((w) => w.location === locToDelete);
-    if (isInUse) {
-      alert(
-        `No se puede eliminar la ubicación "${locToDelete}" porque hay garantías asignadas a ella.`
-      );
-      return;
-    }
-    setLocations(locations.filter((l) => l !== locToDelete));
   };
 
   const toggleStatusFilter = (status: WarrantyStatus) => {
@@ -152,17 +136,30 @@ export function WarrantyDashboard() {
             Gestiona servicios, estados y ubicaciones.
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => signout()}>
-            <LogOut className="mr-2 h-4 w-4" /> Salir
-          </Button>
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
+          <Link href="/locations">
+            <Button
+              variant="outline"
+              className="bg-white text-zinc-950 hover:bg-zinc-100 border-zinc-200 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200"
+            >
+              <MapPin className="mr-2 h-4 w-4" /> Ubicaciones
+            </Button>
+          </Link>
           <Button
             onClick={() => {
               setEditingWarranty(null);
               setIsModalOpen(true);
             }}
+            className="bg-white text-zinc-950 hover:bg-zinc-100 border border-zinc-200 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200"
           >
             <Plus className="mr-2 h-4 w-4" /> Nueva Garantía
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => signout()}
+            className="bg-white text-zinc-950 hover:bg-zinc-100 border-zinc-200 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200 ml-auto sm:ml-0"
+          >
+            <LogOut className="mr-2 h-4 w-4" /> Salir
           </Button>
         </div>
       </div>
@@ -289,8 +286,6 @@ export function WarrantyDashboard() {
         onClose={handleCloseModal}
         warrantyToEdit={editingWarranty}
         availableLocations={locations}
-        onAddLocation={handleAddLocation}
-        onDeleteLocation={handleDeleteLocation}
         onSuccess={() => {
           fetchWarranties();
         }}
