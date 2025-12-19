@@ -161,11 +161,15 @@ export function WarrantyModal({
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-4 p-3 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-zinc-50/50 dark:bg-zinc-900/30">
           <div className="grid grid-cols-2 gap-4">
-            <label className="grid gap-2 text-zinc-900 dark:text-zinc-100">
-              <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            <div className="grid gap-2 text-zinc-900 dark:text-zinc-100">
+              <label
+                htmlFor="invoice-number"
+                className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
+              >
                 N° Boleta *
-              </span>
+              </label>
               <Input
+                id="invoice-number"
                 required
                 autoFocus
                 disabled={isLocked || isEditing}
@@ -179,12 +183,16 @@ export function WarrantyModal({
                   })
                 }
               />
-            </label>
-            <label className="grid gap-2 text-zinc-900 dark:text-zinc-100">
-              <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            </div>
+            <div className="grid gap-2 text-zinc-900 dark:text-zinc-100">
+              <label
+                htmlFor="sku"
+                className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
+              >
                 SKU
-              </span>
+              </label>
               <Input
+                id="sku"
                 disabled={isLocked}
                 placeholder="Código producto"
                 value={formData.sku || ""}
@@ -193,17 +201,21 @@ export function WarrantyModal({
                   setFormData({ ...formData, sku: e.target.value })
                 }
               />
-            </label>
+            </div>
           </div>
         </div>
 
         <div className="space-y-4 p-3 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-zinc-50/50 dark:bg-zinc-900/30">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <label className="sm:col-span-2 grid gap-2 text-zinc-900 dark:text-zinc-100">
-              <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            <div className="sm:col-span-2 grid gap-2 text-zinc-900 dark:text-zinc-100">
+              <label
+                htmlFor="client-name"
+                className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
+              >
                 Cliente *
-              </span>
+              </label>
               <Input
+                id="client-name"
                 disabled={isLocked || isEditing}
                 required
                 placeholder="Nombre completo"
@@ -213,12 +225,16 @@ export function WarrantyModal({
                   setFormData({ ...formData, clientName: e.target.value })
                 }
               />
-            </label>
-            <label className="grid gap-2 text-zinc-900 dark:text-zinc-100">
-              <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            </div>
+            <div className="grid gap-2 text-zinc-900 dark:text-zinc-100">
+              <label
+                htmlFor="rut"
+                className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
+              >
                 RUT *
-              </span>
+              </label>
               <Input
+                id="rut"
                 disabled={isLocked || isEditing}
                 required
                 placeholder="12.345.678-9"
@@ -226,15 +242,19 @@ export function WarrantyModal({
                 onChange={handleRutChange}
                 maxLength={12}
               />
-            </label>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <label className="grid gap-2 text-zinc-900 dark:text-zinc-100">
-              <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            <div className="grid gap-2 text-zinc-900 dark:text-zinc-100">
+              <label
+                htmlFor="contact"
+                className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
+              >
                 Teléfono *
-              </span>
+              </label>
               <Input
+                id="contact"
                 required
                 disabled={isLocked}
                 placeholder="+56 9..."
@@ -244,12 +264,16 @@ export function WarrantyModal({
                 pattern="\+56 9 \d{4} \d{4}"
                 title="Rellene el campo con el formato: +56 9 XXXX XXXX"
               />
-            </label>
-            <label className="grid gap-2 text-zinc-900 dark:text-zinc-100">
-              <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            </div>
+            <div className="grid gap-2 text-zinc-900 dark:text-zinc-100">
+              <label
+                htmlFor="email"
+                className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
+              >
                 Email
-              </span>
+              </label>
               <Input
+                id="email"
                 disabled={isLocked}
                 type="email"
                 placeholder="cliente@email.com"
@@ -259,17 +283,21 @@ export function WarrantyModal({
                 }
                 maxLength={320}
               />
-            </label>
+            </div>
           </div>
         </div>
 
         <div className="space-y-4 p-3 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-zinc-50/50 dark:bg-zinc-900/30">
           <div className="grid grid-cols-2 gap-4">
-            <label className="grid gap-2 text-zinc-900 dark:text-zinc-100">
-              <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            <div className="grid gap-2 text-zinc-900 dark:text-zinc-100">
+              <label
+                htmlFor="product"
+                className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
+              >
                 Producto *
-              </span>
+              </label>
               <Input
+                id="product"
                 disabled={isLocked || isEditing}
                 required
                 placeholder="Nombre del producto"
@@ -279,12 +307,16 @@ export function WarrantyModal({
                   setFormData({ ...formData, product: e.target.value })
                 }
               />
-            </label>
-            <label className="grid gap-2 text-zinc-900 dark:text-zinc-100">
-              <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            </div>
+            <div className="grid gap-2 text-zinc-900 dark:text-zinc-100">
+              <label
+                htmlFor="repair-cost"
+                className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
+              >
                 Costo reparación
-              </span>
+              </label>
               <Input
+                id="repair-cost"
                 disabled={isLocked}
                 type="text"
                 placeholder="$0"
@@ -297,16 +329,20 @@ export function WarrantyModal({
                   }
                 }}
               />
-            </label>
+            </div>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4 p-3 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-zinc-50/50 dark:bg-zinc-900/30">
-          <label className="grid gap-2 text-zinc-900 dark:text-zinc-100">
-            <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          <div className="grid gap-2 text-zinc-900 dark:text-zinc-100">
+            <label
+              htmlFor="location-select"
+              className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
+            >
               Ubicación *
-            </span>
+            </label>
             <select
+              id="location-select"
               disabled={isLocked}
               required
               className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 focus-visible:outline-none focus:ring-2 focus:ring-zinc-950 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 disabled:opacity-50"
@@ -332,13 +368,17 @@ export function WarrantyModal({
                   </option>
                 )}
             </select>
-          </label>
+          </div>
 
-          <label className="grid gap-2 text-zinc-900 dark:text-zinc-100">
-            <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          <div className="grid gap-2 text-zinc-900 dark:text-zinc-100">
+            <label
+              htmlFor="status-select"
+              className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
+            >
               Estado
-            </span>
+            </label>
             <select
+              id="status-select"
               className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 focus-visible:outline-none focus:ring-2 focus:ring-zinc-950 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
               value={formData.status ?? "pending"}
               onChange={(e) =>
@@ -349,15 +389,19 @@ export function WarrantyModal({
               <option value="ready">Lista (Para retiro)</option>
               <option value="completed">Completada (Entregada/Cerrada)</option>
             </select>
-          </label>
+          </div>
         </div>
 
         <div className="space-y-4">
-          <label className="grid gap-2 text-zinc-900 dark:text-zinc-100">
-            <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          <div className="grid gap-2 text-zinc-900 dark:text-zinc-100">
+            <label
+              htmlFor="failure-description"
+              className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
+            >
               Falla / Motivo *
-            </span>
+            </label>
             <Textarea
+              id="failure-description"
               disabled={isLocked}
               required
               placeholder="Describa la falla detalladamente..."
@@ -371,13 +415,17 @@ export function WarrantyModal({
                 })
               }
             />
-          </label>
+          </div>
 
-          <label className="grid gap-2 text-zinc-900 dark:text-zinc-100">
-            <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          <div className="grid gap-2 text-zinc-900 dark:text-zinc-100">
+            <label
+              htmlFor="notes"
+              className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
+            >
               Notas internas
-            </span>
+            </label>
             <Textarea
+              id="notes"
               placeholder="Detalles adicionales, observaciones del técnico, etc..."
               value={formData.notes || ""}
               maxLength={1000}
@@ -386,7 +434,7 @@ export function WarrantyModal({
                 setFormData({ ...formData, notes: e.target.value })
               }
             />
-          </label>
+          </div>
         </div>
 
         <div className="flex justify-end gap-2 pt-4 border-t dark:border-zinc-800">
