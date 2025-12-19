@@ -217,15 +217,15 @@ export default function LocationsManager({
                         {loc.activeCount === 0 && loc.completedCount > 0 && (
                           <Button
                             variant="ghost"
-                            size="sm"
+                            size="icon"
                             className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900/20"
                             onClick={() =>
                               handleToggleActive(loc.id, loc.isActive)
                             }
                             disabled={isPending}
+                            title="Desactivar ubicación"
                           >
-                            <Ban className="h-4 w-4 mr-1" />
-                            Desactivar
+                            <Ban className="h-4 w-4" />
                           </Button>
                         )}
                         {loc.activeCount === 0 && loc.completedCount === 0 && (
