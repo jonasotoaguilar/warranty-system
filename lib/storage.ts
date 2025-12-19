@@ -24,6 +24,7 @@ export async function getWarranties(params?: {
   limit?: number;
   search?: string;
   status?: WarrantyStatus[];
+  location?: string;
   userId?: string;
 }): Promise<{ data: Warranty[]; total: number; page: number; limit: number }> {
   const page = params?.page || 1;
@@ -39,6 +40,10 @@ export async function getWarranties(params?: {
 
   if (params?.status && params.status.length > 0) {
     where.status = { in: params.status };
+  }
+
+  if (params?.location) {
+    where.location = params.location;
   }
 
   // Nota: La búsqueda difusa en Prisma SQLite es limitada, pero intentaremos algo básico.
@@ -136,6 +141,11 @@ export async function updateWarranty(
 
   if (!currentWarranty) {
     throw new Error("No warranty found or access denied");
+  }
+
+  // Block modification if completed
+  if (currentWarranty.status === "completed") {
+    throw new Error("Cannot modify a completed warranty");
   }
 
   // 2. Preparar operaciones en transacción

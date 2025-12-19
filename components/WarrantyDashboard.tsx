@@ -42,6 +42,7 @@ export function WarrantyDashboard() {
   const [editingWarranty, setEditingWarranty] = useState<Warranty | null>(null);
   const [viewingWarranty, setViewingWarranty] = useState<Warranty | null>(null);
   const [locations, setLocations] = useState<string[]>([]);
+  const [locationFilter, setLocationFilter] = useState<string>("");
 
   const fetchLocations = useCallback(async () => {
     const result = await getLocations();
@@ -58,6 +59,7 @@ export function WarrantyDashboard() {
       params.set("limit", "20");
       if (searchTerm) params.set("search", searchTerm);
       if (statusFilter.length > 0) params.set("status", statusFilter.join(","));
+      if (locationFilter) params.set("location", locationFilter);
 
       const res = await fetch(`/api/warranties?${params.toString()}`);
       if (res.ok) {
@@ -74,7 +76,7 @@ export function WarrantyDashboard() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, searchTerm, statusFilter]);
+  }, [currentPage, searchTerm, statusFilter, locationFilter]);
 
   // Debounce para fetch cuando cambien filtros
   useEffect(() => {
@@ -88,10 +90,10 @@ export function WarrantyDashboard() {
     fetchLocations();
   }, [fetchLocations]);
 
-  // Reset página al cambiar filtros (si cambia search o status)
+  // Reset página al cambiar filtros (si cambia search, status o location)
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter]);
+  }, [searchTerm, statusFilter, locationFilter]);
 
   const handleEdit = (warranty: Warranty) => {
     setEditingWarranty(warranty);
@@ -175,33 +177,53 @@ export function WarrantyDashboard() {
           />
         </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0">
-          <span className="text-sm text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
-            <Filter className="h-4 w-4" /> Estados:
-          </span>
-          {(["pending", "ready", "completed"] as WarrantyStatus[]).map(
-            (status) => {
-              const isActive = statusFilter.includes(status);
-              const labels = {
-                pending: "Pendientes",
-                ready: "Listas",
-                completed: "Completadas",
-              };
-              return (
-                <button
-                  key={status}
-                  onClick={() => toggleStatusFilter(status)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors border ${
-                    isActive
-                      ? "bg-zinc-900 text-zinc-50 border-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 dark:border-zinc-100"
-                      : "bg-transparent text-zinc-600 border-zinc-200 hover:bg-zinc-100 dark:text-zinc-400 dark:border-zinc-800 dark:hover:bg-zinc-800"
-                  }`}
-                >
-                  {labels[status]}
-                </button>
-              );
-            }
-          )}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <span className="text-sm text-zinc-500 dark:text-zinc-400 flex items-center gap-1 shrink-0">
+              <MapPin className="h-4 w-4" /> Ubicación:
+            </span>
+            <select
+              className="flex h-9 w-full sm:w-[180px] rounded-md border border-zinc-200 bg-white px-3 py-1 text-sm text-zinc-900 focus-visible:outline-none focus:ring-2 focus:ring-zinc-950 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+              value={locationFilter}
+              onChange={(e) => setLocationFilter(e.target.value)}
+            >
+              <option value="">Todas las ubicaciones</option>
+              {locations.map((loc) => (
+                <option key={loc} value={loc}>
+                  {loc}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0">
+            <span className="text-sm text-zinc-500 dark:text-zinc-400 flex items-center gap-1 shrink-0">
+              <Filter className="h-4 w-4" /> Estados:
+            </span>
+            {(["pending", "ready", "completed"] as WarrantyStatus[]).map(
+              (status) => {
+                const isActive = statusFilter.includes(status);
+                const labels = {
+                  pending: "Pendientes",
+                  ready: "Listas",
+                  completed: "Completadas",
+                };
+                return (
+                  <button
+                    key={status}
+                    onClick={() => toggleStatusFilter(status)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors border ${
+                      isActive
+                        ? "bg-zinc-900 text-zinc-50 border-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 dark:border-zinc-100"
+                        : "bg-transparent text-zinc-600 border-zinc-200 hover:bg-zinc-100 dark:text-zinc-400 dark:border-zinc-800 dark:hover:bg-zinc-800"
+                    }`}
+                  >
+                    {labels[status]}
+                  </button>
+                );
+              }
+            )}
+          </div>
         </div>
       </div>
 

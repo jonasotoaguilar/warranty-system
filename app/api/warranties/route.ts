@@ -28,6 +28,7 @@ export async function GET(request: Request) {
   const limit = Number(searchParams.get("limit")) || 20;
   const search = searchParams.get("search") || undefined;
   const statusParam = searchParams.get("status");
+  const location = searchParams.get("location") || undefined;
 
   const status = statusParam ? (statusParam.split(",") as any[]) : undefined;
 
@@ -36,6 +37,7 @@ export async function GET(request: Request) {
     limit,
     search,
     status,
+    location,
     userId: user.id,
   });
 
@@ -73,7 +75,7 @@ export async function POST(request: Request) {
       product: body.product,
       failureDescription: body.failureDescription,
       sku: body.sku,
-      location: body.location || "Ingreso",
+      location: body.location || "Ingresada",
       entryDate: body.entryDate || new Date().toISOString(),
       deliveryDate: body.deliveryDate,
       readyDate: body.readyDate,
