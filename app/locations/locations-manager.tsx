@@ -12,6 +12,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { Trash2, Plus, ArrowLeft, Ban, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 
 type LocationType = {
   id: string;
@@ -33,6 +34,19 @@ export default function LocationsManager({
   const [newLocationName, setNewLocationName] = useState("");
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [confirmState, setConfirmState] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+    onConfirm: () => void;
+    variant: "danger" | "warning";
+  }>({
+    isOpen: false,
+    title: "",
+    description: "",
+    onConfirm: () => {},
+    variant: "danger",
+  });
 
   // Paginación
   const [currentPage, setCurrentPage] = useState(1);
@@ -63,25 +77,39 @@ export default function LocationsManager({
   }
 
   async function handleDelete(id: string, name: string) {
-    if (!confirm(`¿Estás seguro de eliminar la ubicación "${name}"?`)) return;
-
-    startTransition(async () => {
-      const result = await deleteLocation(id, name);
-      if (result.error) {
-        alert(result.error);
-      }
+    setConfirmState({
+      isOpen: true,
+      title: "Eliminar Ubicación",
+      description: `¿Estás seguro de eliminar la ubicación "${name}"? Esta acción no se puede deshacer.`,
+      variant: "danger",
+      onConfirm: async () => {
+        startTransition(async () => {
+          const result = await deleteLocation(id, name);
+          if (result.error) {
+            alert(result.error);
+          }
+        });
+        setConfirmState((prev) => ({ ...prev, isOpen: false }));
+      },
     });
   }
 
   async function handleToggleActive(id: string, currentStatus: boolean) {
     const action = currentStatus ? "desactivar" : "habilitar";
-    if (!confirm(`¿Estás seguro de ${action} esta ubicación?`)) return;
-
-    startTransition(async () => {
-      const result = await toggleLocationActive(id, !currentStatus);
-      if (result.error) {
-        alert(result.error);
-      }
+    setConfirmState({
+      isOpen: true,
+      title: `${currentStatus ? "Desactivar" : "Habilitar"} Ubicación`,
+      description: `¿Estás seguro de ${action} esta ubicación?`,
+      variant: currentStatus ? "warning" : ("default" as any),
+      onConfirm: async () => {
+        startTransition(async () => {
+          const result = await toggleLocationActive(id, !currentStatus);
+          if (result.error) {
+            alert(result.error);
+          }
+        });
+        setConfirmState((prev) => ({ ...prev, isOpen: false }));
+      },
     });
   }
 
@@ -298,6 +326,15 @@ export default function LocationsManager({
           </div>
         )}
       </div>
+      <ConfirmationDialog
+        isOpen={confirmState.isOpen}
+        onClose={() => setConfirmState((prev) => ({ ...prev, isOpen: false }))}
+        title={confirmState.title}
+        description={confirmState.description}
+        onConfirm={confirmState.onConfirm}
+        variant={confirmState.variant}
+        isLoading={isPending}
+      />
     </div>
   );
 }

@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Input } from "./ui/input";
+import { ConfirmationDialog } from "./ui/confirmation-dialog";
 
 export function WarrantyDashboard() {
   const [warranties, setWarranties] = useState<Warranty[]>([]);
@@ -43,6 +44,13 @@ export function WarrantyDashboard() {
   const [viewingWarranty, setViewingWarranty] = useState<Warranty | null>(null);
   const [locations, setLocations] = useState<any[]>([]);
   const [locationFilter, setLocationFilter] = useState<string>("");
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    isOpen: boolean;
+    warranty: Warranty | null;
+  }>({
+    isOpen: false,
+    warranty: null,
+  });
 
   const fetchLocations = useCallback(async () => {
     const result = await getLocations(true);
@@ -237,31 +245,40 @@ export function WarrantyDashboard() {
           warranties={warranties}
           onEdit={handleEdit}
           onView={handleView}
-          onDelete={async (warranty) => {
-            if (
-              confirm(
-                `¿Estás seguro de eliminar la garantía #${
-                  warranty.invoiceNumber || "S/N"
-                } de ${warranty.clientName}?`
-              )
-            ) {
-              try {
-                const res = await fetch(`/api/warranties?id=${warranty.id}`, {
-                  method: "DELETE",
-                });
-                if (res.ok) {
-                  fetchWarranties();
-                } else {
-                  alert("Error al eliminar");
-                }
-              } catch (e) {
-                console.error(e);
-                alert("Error de conexión");
-              }
-            }
-          }}
+          onDelete={(warranty) => setDeleteConfirm({ isOpen: true, warranty })}
         />
       </div>
+
+      <ConfirmationDialog
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, warranty: null })}
+        title="Eliminar Garantía"
+        description={`¿Estás seguro de eliminar la garantía #${
+          deleteConfirm.warranty?.invoiceNumber || "S/N"
+        } de ${
+          deleteConfirm.warranty?.clientName
+        }? Esta acción no se puede deshacer.`}
+        onConfirm={async () => {
+          if (!deleteConfirm.warranty) return;
+          try {
+            const res = await fetch(
+              `/api/warranties?id=${deleteConfirm.warranty.id}`,
+              {
+                method: "DELETE",
+              }
+            );
+            if (res.ok) {
+              fetchWarranties();
+              setDeleteConfirm({ isOpen: false, warranty: null });
+            } else {
+              alert("Error al eliminar");
+            }
+          } catch (e) {
+            console.error(e);
+            alert("Error de conexión");
+          }
+        }}
+      />
 
       {/* Controles de Paginación */}
       <div className="flex items-center justify-center gap-2 mt-6">
