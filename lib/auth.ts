@@ -14,19 +14,24 @@ interface AuthentikUser {
 export async function getAuthUser(): Promise<AuthentikUser | null> {
   const headersList = await headers();
 
-  const userId = headersList.get("x-authentik-uid");
-  const email = headersList.get("x-authentik-email");
-  const name = headersList.get("x-authentik-name");
-  const username = headersList.get("x-authentik-username");
+  // Lista de headers posibles según configuración de Authentik/Traefik
+  const userId =
+    headersList.get("x-authentik-uid") || headersList.get("remote-user");
+  const email =
+    headersList.get("x-authentik-email") || headersList.get("remote-email");
+  const name =
+    headersList.get("x-authentik-name") || headersList.get("remote-name");
+  const username =
+    headersList.get("x-authentik-username") || headersList.get("remote-user");
 
-  if (!userId || !username) {
+  if (!userId && !username) {
     return null;
   }
 
   return {
-    id: userId,
+    id: userId || username || "unknown",
     email: email,
-    name: name || username,
-    username: username,
+    name: name || username || "Usuario",
+    username: username || userId || "usuario",
   };
 }
