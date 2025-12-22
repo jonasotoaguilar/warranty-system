@@ -24,6 +24,8 @@ export async function getAuthUser(): Promise<AuthentikUser | null> {
   const username =
     headersList.get("x-authentik-username") || headersList.get("remote-user");
 
+  console.log(`[Auth Debug] Headers: ${JSON.stringify(headersList)}`);
+
   if (!userId && !username) {
     return null;
   }
