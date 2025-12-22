@@ -1,20 +1,22 @@
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
-  const authentikUrl = process.env.NEXT_PUBLIC_AUTHENTIK_URL;
-  const baseUrl = new URL(request.url).origin;
+  // Priorizamos AUTHENTIK_URL (Server side) sobre NEXT_PUBLIC_
+  const authentikUrl =
+    process.env.AUTHENTIK_URL || process.env.NEXT_PUBLIC_AUTHENTIK_URL;
+  const appUrl = new URL(request.url).origin;
 
-  console.log(`[Logout] Authentik URL Configured: ${authentikUrl}`);
+  console.log(`[Logout Debug] App URL: ${appUrl}`);
+  console.log(`[Logout Debug] Authentik URL Configured: ${authentikUrl}`);
 
-  // Si la URL de Authentik es distinta a la de la web, vamos al servidor de identidad directamente
-  if (authentikUrl && authentikUrl !== baseUrl) {
-    const finalUrl = `${authentikUrl}/if/flow/default-invalidation-flow/?next=${baseUrl}`;
-    console.log(`[Logout] Redirecting to absolute Authentik: ${finalUrl}`);
-    return NextResponse.redirect(finalUrl);
+  if (authentikUrl && authentikUrl.startsWith("http")) {
+    // Forzamos el flujo de invalidación global de Authentik
+    const destination = `${authentikUrl}/if/flow/default-invalidation-flow/?next=${appUrl}`;
+    console.log(`[Logout Debug] Redirecting to: ${destination}`);
+    return NextResponse.redirect(destination);
   }
 
-  // Si no hay URL o es la misma, usamos el endpoint del outpost
-  const fallbackUrl = `${baseUrl}/outpost.goauthentik.io/auth/logout`;
-  console.log(`[Logout] Fallback to relative outpost: ${fallbackUrl}`);
-  return NextResponse.redirect(fallbackUrl);
+  // Fallback extremadamente simple si no hay URL
+  console.log(`[Logout Debug] No Authentik URL, falling back to outpost...`);
+  return NextResponse.redirect(`${appUrl}/outpost.goauthentik.io/auth/logout`);
 }
