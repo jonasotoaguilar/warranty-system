@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.0.6](https://github.com/jonasotoaguilar/warranty-system/compare/v2.0.5...v2.0.6) (2025-12-22)
+
+
+### Bug Fixes
+
+* force absolute redirect for global logout ([f9be40a](https://github.com/jonasotoaguilar/warranty-system/commit/f9be40a41e83c00a222c03e3d9ff1e1587b39d74))
+
 ### [2.0.5](https://github.com/jonasotoaguilar/warranty-system/compare/v2.0.4...v2.0.5) (2025-12-22)
 
 
