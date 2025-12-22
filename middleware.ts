@@ -1,14 +1,17 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
-  // Con Authentik Proxy Provider, las cabeceras se inyectan en la petición.
-  // Verificamos el ID de usuario para asegurar que la petición viene autenticada por el proxy.
+  // Verificamos múltiples cabeceras que Authentik puede enviar.
+  // Algunos proxys usan x-authentik-uid, otros x-authentik-username o remote-user.
   const userId = request.headers.get("x-authentik-uid");
+  const username = request.headers.get("x-authentik-username");
+  const remoteUser = request.headers.get("remote-user");
 
-  // Si no hay ID de usuario y no es una ruta de archivos estáticos o favicon,
-  // devolvemos 401 Unauthorized ya que Authentik Proxy debería haber manejado el login.
-  if (!userId) {
-    return new NextResponse("Unauthorized", { status: 401 });
+  // Si no hay ninguna cabecera de identificación, devolvemos 401.
+  if (!userId && !username && !remoteUser) {
+    return new NextResponse("Unauthorized - No Auth Headers found", {
+      status: 401,
+    });
   }
 
   return NextResponse.next();
