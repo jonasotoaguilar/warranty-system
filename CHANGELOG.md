@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.0.2](https://github.com/jonasotoaguilar/warranty-system/compare/v2.0.0...v2.0.2) (2025-12-22)
+
+
+### Bug Fixes
+
+* **auth:** proxy authentik ([ec9feed](https://github.com/jonasotoaguilar/warranty-system/commit/ec9feed68b9298ee99d018fd72e4a28f20ffd228))
+* update logout url ([9616860](https://github.com/jonasotoaguilar/warranty-system/commit/9616860357a8059e1f1785f7a24638cf12d08de7))
+
 ### [2.0.1](https://github.com/jonasotoaguilar/warranty-system/compare/v2.0.0...v2.0.1) (2025-12-22)
 
 
