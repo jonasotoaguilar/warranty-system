@@ -10,8 +10,11 @@ import {
   RefreshCw,
   FileText,
   ChevronDown,
+  ArrowRight,
 } from "lucide-react";
 import Link from "next/link";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { getLocationLogs } from "@/app/actions/logs";
 
@@ -195,7 +198,8 @@ export default function LogsManager({
         className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm overflow-hidden transition-all"
         aria-label="Lista de movimientos"
       >
-        <div className="overflow-x-auto">
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-sm whitespace-nowrap">
             <thead>
               <tr className="bg-zinc-50 dark:bg-zinc-900/50 border-b border-zinc-200 dark:border-zinc-800">
@@ -280,17 +284,20 @@ export default function LogsManager({
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex flex-col">
-                        <span className="font-medium text-zinc-900 dark:text-zinc-100">
-                          {new Date(log.changedAt).toLocaleDateString("es-CL", {
-                            day: "2-digit",
-                            month: "2-digit",
-                            year: "numeric",
+                        <span
+                          className="font-medium text-zinc-900 dark:text-zinc-100"
+                          suppressHydrationWarning
+                        >
+                          {format(new Date(log.changedAt), "dd/MM/yyyy", {
+                            locale: es,
                           })}
                         </span>
-                        <span className="text-[10px] text-zinc-500 font-mono tracking-tighter">
-                          {new Date(log.changedAt).toLocaleTimeString("es-CL", {
-                            hour: "2-digit",
-                            minute: "2-digit",
+                        <span
+                          className="text-[10px] text-zinc-500 font-mono tracking-tighter"
+                          suppressHydrationWarning
+                        >
+                          {format(new Date(log.changedAt), "HH:mm", {
+                            locale: es,
                           })}
                         </span>
                       </div>
@@ -300,6 +307,67 @@ export default function LogsManager({
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="md:hidden space-y-4 p-4">
+          {logs.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 py-8 text-center text-zinc-500 dark:text-zinc-400">
+              <FileText className="h-8 w-8 text-zinc-200 dark:text-zinc-800" />
+              <p>No se encontraron movimientos registrados.</p>
+            </div>
+          ) : (
+            logs.map((log) => (
+              <div
+                key={log.id}
+                className="bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-lg border border-zinc-100 dark:border-zinc-800 space-y-3"
+              >
+                <div className="flex justify-between items-start">
+                  <Badge
+                    variant="outline"
+                    className="font-mono bg-white dark:bg-zinc-950"
+                  >
+                    {log.invoiceNumber || "S/N"}
+                  </Badge>
+                  <div className="text-right">
+                    <div
+                      className="text-xs font-medium text-zinc-900 dark:text-zinc-100"
+                      suppressHydrationWarning
+                    >
+                      {format(new Date(log.changedAt), "dd/MM/yyyy", {
+                        locale: es,
+                      })}
+                    </div>
+                    <div
+                      className="text-[10px] text-zinc-500 font-mono"
+                      suppressHydrationWarning
+                    >
+                      {format(new Date(log.changedAt), "HH:mm", { locale: es })}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
+                    {log.product}
+                  </h3>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    {log.clientName}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 text-xs pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                  <span className="flex-1 truncate text-center py-1 px-2 rounded bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400">
+                    {log.fromLocation}
+                  </span>
+                  <ArrowRight className="h-3 w-3 text-zinc-400 shrink-0" />
+                  <span className="flex-1 truncate text-center py-1 px-2 rounded bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400">
+                    {log.toLocation}
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
         </div>
 
         {totalPages > 1 && (

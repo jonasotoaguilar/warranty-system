@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { databases, COLLECTIONS, DB_ID, Query, ID } from "@/lib/appwrite";
 import { revalidatePath } from "next/cache";
 import { getAuthUser } from "@/lib/auth";
 import { normalizeString } from "@/lib/utils";
@@ -13,40 +13,72 @@ export async function getLocations(onlyActive = false) {
   }
 
   try {
-    const where: any = { userId: user.id };
+    const queries = [
+      Query.equal("userId", user.id),
+      Query.orderDesc("createdAt"),
+    ];
+
     if (onlyActive) {
-      where.isActive = true;
+      queries.push(Query.equal("isActive", true));
     }
 
-    const locations = await prisma.location.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-    });
+    const locationsResult = await databases.listDocuments(
+      DB_ID,
+      COLLECTIONS.LOCATIONS,
+      queries
+    );
+
+    const locations = locationsResult.documents.map((doc: any) => ({
+      ...doc,
+      id: doc.$id,
+    }));
 
     // Enriquecer con conteos
     const enrichedLocations = await Promise.all(
       locations.map(async (loc) => {
-        const [activeCount, completedCount, hasLogs] = await Promise.all([
-          prisma.warranty.count({
-            where: {
-              userId: user.id,
-              locationId: loc.id,
-              status: { in: ["pending", "ready"] },
-            },
-          }),
-          prisma.warranty.count({
-            where: {
-              userId: user.id,
-              locationId: loc.id,
-              status: "completed",
-            },
-          }),
-          prisma.locationLog.count({
-            where: {
-              OR: [{ fromLocationId: loc.id }, { toLocationId: loc.id }],
-            },
-          }),
+        const activePromise = databases.listDocuments(
+          DB_ID,
+          COLLECTIONS.WARRANTIES,
+          [
+            Query.equal("userId", user.id),
+            Query.equal("locationId", loc.id),
+            Query.equal("status", ["pending", "ready"]),
+            Query.limit(1), // Get total only
+          ]
+        );
+
+        const completedPromise = databases.listDocuments(
+          DB_ID,
+          COLLECTIONS.WARRANTIES,
+          [
+            Query.equal("userId", user.id),
+            Query.equal("locationId", loc.id),
+            Query.equal("status", "completed"),
+            Query.limit(1), // Get total only
+          ]
+        );
+
+        const logsPromise = databases.listDocuments(
+          DB_ID,
+          COLLECTIONS.LOCATION_LOGS,
+          [
+            Query.or([
+              Query.equal("fromLocationId", loc.id),
+              Query.equal("toLocationId", loc.id),
+            ]),
+            Query.limit(1), // Get total only
+          ]
+        );
+
+        const [activeRes, completedRes, logsRes] = await Promise.all([
+          activePromise,
+          completedPromise,
+          logsPromise,
         ]);
+
+        const activeCount = activeRes.total;
+        const completedCount = completedRes.total;
+        const hasLogs = logsRes.total;
 
         const hasHistory = activeCount > 0 || completedCount > 0 || hasLogs > 0;
 
@@ -82,25 +114,29 @@ export async function createLocation(prevState: any, formData: FormData) {
   try {
     const normalizedNew = normalizeString(name);
 
-    // Obtener todas las ubicaciones del usuario para comparar manual (o usar raw query)
-    const existing = await prisma.location.findMany({
-      where: { userId: user.id },
-    });
+    // Obtener todas las ubicaciones del usuario para comparar
+    const existingResult = await databases.listDocuments(
+      DB_ID,
+      COLLECTIONS.LOCATIONS,
+      [Query.equal("userId", user.id), Query.limit(100)]
+    );
 
-    const isDuplicate = existing.some(
-      (loc) => normalizeString(loc.name) === normalizedNew
+    const isDuplicate = existingResult.documents.some(
+      (loc: any) => normalizeString(loc.name) === normalizedNew
     );
 
     if (isDuplicate) {
       return { error: "Ya existe una ubicación con este nombre (o similar)" };
     }
 
-    await prisma.location.create({
-      data: {
-        name: name.trim(),
-        userId: user.id,
-      },
+    await databases.createDocument(DB_ID, COLLECTIONS.LOCATIONS, ID.unique(), {
+      name: name.trim(),
+      userId: user.id,
+      isActive: true, // Default
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
+
     revalidatePath("/locations");
     return { success: true, message: "Ubicación creada correctamente" };
   } catch (error: any) {
@@ -117,9 +153,14 @@ export async function toggleLocationActive(id: string, active: boolean) {
   }
 
   try {
-    await prisma.location.update({
-      where: { id, userId: user.id },
-      data: { isActive: active },
+    const doc = await databases.getDocument(DB_ID, COLLECTIONS.LOCATIONS, id);
+    if (doc.userId !== user.id) {
+      return { error: "No autorizado" };
+    }
+
+    await databases.updateDocument(DB_ID, COLLECTIONS.LOCATIONS, id, {
+      isActive: active,
+      updatedAt: new Date().toISOString(),
     });
     revalidatePath("/locations");
     return { success: true };
@@ -138,47 +179,47 @@ export async function deleteLocation(id: string, name: string) {
 
   try {
     // Verificar si la ubicación pertenece al usuario
-    const location = await prisma.location.findFirst({
-      where: { id, userId: user.id },
-    });
+    const location = await databases.getDocument(
+      DB_ID,
+      COLLECTIONS.LOCATIONS,
+      id
+    );
 
-    if (!location) {
+    if (!location || location.userId !== user.id) {
       return { error: "Ubicación no encontrada" };
     }
 
-    // Validar si está en uso en cualquier garantía
-    const activeCount = await prisma.warranty.count({
-      where: {
-        userId: user.id,
-        locationId: id,
-        status: { in: ["pending", "ready"] },
-      },
-    });
+    // Validar si está en uso en cualquier garantía (cualquier status)
+    const warrantiesRes = await databases.listDocuments(
+      DB_ID,
+      COLLECTIONS.WARRANTIES,
+      [
+        Query.equal("userId", user.id),
+        Query.equal("locationId", id),
+        Query.limit(1), // Just check total
+      ]
+    );
 
-    const completedCount = await prisma.warranty.count({
-      where: {
-        userId: user.id,
-        locationId: id,
-        status: "completed",
-      },
-    });
+    const logsRes = await databases.listDocuments(
+      DB_ID,
+      COLLECTIONS.LOCATION_LOGS,
+      [
+        Query.or([
+          Query.equal("fromLocationId", id),
+          Query.equal("toLocationId", id),
+        ]),
+        Query.limit(1),
+      ]
+    );
 
-    const hasLogs = await prisma.locationLog.count({
-      where: {
-        OR: [{ fromLocationId: id }, { toLocationId: id }],
-      },
-    });
-
-    if (activeCount > 0 || completedCount > 0 || hasLogs > 0) {
+    if (warrantiesRes.total > 0 || logsRes.total > 0) {
       return {
         error:
           "No se puede eliminar una ubicación con historial de garantías o movimientos.",
       };
     }
 
-    await prisma.location.delete({
-      where: { id },
-    });
+    await databases.deleteDocument(DB_ID, COLLECTIONS.LOCATIONS, id);
     revalidatePath("/locations");
     return { success: true };
   } catch (error) {

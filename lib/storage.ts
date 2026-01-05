@@ -1,25 +1,38 @@
-import { prisma } from "@/lib/prisma";
-// Force recompile
+import { databases, COLLECTIONS, DB_ID, Query, ID } from "@/lib/appwrite";
 import { Warranty, WarrantyStatus } from "./types";
-// Removed formatRut from utils as it's no longer needed for search logic here
 
-// Helper to convert Prisma result to Warranty type (Dates to strings)
-function mapToWarranty(item: any): Warranty {
+// Helper to convert Appwrite document to Warranty type
+function mapToWarranty(
+  item: any,
+  locMap: Map<string, any>,
+  logs: any[] = []
+): Warranty {
+  const locationName = locMap.get(item.locationId)?.name || "Sin ubicación";
+
+  // Sort logs for this warranty
+  const warrantyLogs = logs
+    .filter((l) => l.warrantyId === item.$id)
+    .sort(
+      (a, b) =>
+        new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime()
+    )
+    .map((log) => ({
+      ...log,
+      id: log.$id,
+      fromLocation: locMap.get(log.fromLocationId)?.name || "Desconocido",
+      toLocation: locMap.get(log.toLocationId)?.name || "Desconocido",
+      changedAt: log.changedAt, // Already string in Appwrite
+    }));
+
   return {
     ...item,
-    location: item.location?.name || "Sin ubicación",
-    entryDate: item.entryDate.toISOString(),
-    deliveryDate: item.deliveryDate
-      ? item.deliveryDate.toISOString()
-      : undefined,
-    readyDate: item.readyDate ? item.readyDate.toISOString() : undefined,
+    id: item.$id, // Map $id to id
+    location: locationName,
+    entryDate: item.entryDate,
+    deliveryDate: item.deliveryDate || undefined,
+    readyDate: item.readyDate || undefined,
     status: item.status as WarrantyStatus,
-    locationLogs: item.locationLogs?.map((log: any) => ({
-      ...log,
-      fromLocation: log.fromLocation?.name || "Desconocido",
-      toLocation: log.toLocation?.name || "Desconocido",
-      changedAt: log.changedAt.toISOString(),
-    })),
+    locationLogs: warrantyLogs,
   };
 }
 
@@ -33,72 +46,112 @@ export async function getWarranties(params?: {
 }): Promise<{ data: Warranty[]; total: number; page: number; limit: number }> {
   const page = params?.page || 1;
   const limit = params?.limit || 20;
-  const skip = (page - 1) * limit;
+  const offset = (page - 1) * limit;
 
-  // Construir filtros
-  const where: any = {};
+  const queries: string[] = [
+    Query.limit(limit),
+    Query.offset(offset),
+    Query.orderDesc("entryDate"),
+  ];
 
   if (params?.userId) {
-    where.userId = params.userId;
+    queries.push(Query.equal("userId", params.userId));
   }
 
   if (params?.status && params.status.length > 0) {
-    where.status = { in: params.status };
+    queries.push(Query.equal("status", params.status));
   }
 
   if (params?.location) {
-    // Si se pasa un string que parece ID, lo usamos, si no buscamos por nombre
-    where.locationId = params.location;
+    queries.push(Query.equal("locationId", params.location));
   }
 
-  // Nota: La búsqueda difusa en Prisma SQLite es limitada, pero intentaremos algo básico.
-  // Para search real, normalmente se usa un índice FullText o similar.
   if (params?.search) {
     const search = params.search;
-
-    const conditions: any[] = [
-      { clientName: { startsWith: search, mode: "insensitive" } },
-      { invoiceNumber: { startsWith: search, mode: "insensitive" } },
-      { rut: { startsWith: search, mode: "insensitive" } },
-    ];
-
-    where.OR = conditions;
+    // Note: 'search' requires FullText index
+    // 'starsWith' works on Key index
+    queries.push(
+      Query.or([
+        Query.search("clientName", search),
+        Query.startsWith("invoiceNumber", search),
+        Query.startsWith("rut", search),
+      ])
+    );
   }
 
-  const [items, total] = await Promise.all([
-    prisma.warranty.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: { entryDate: "desc" },
-      include: {
-        location: true,
-        locationLogs: {
-          include: {
-            fromLocation: true,
-            toLocation: true,
-          },
-          orderBy: { changedAt: "desc" },
-        },
-      },
-    } as any),
-    prisma.warranty.count({ where }),
-  ]);
+  try {
+    const result = await databases.listDocuments(
+      DB_ID,
+      COLLECTIONS.WARRANTIES,
+      queries
+    ); // Casting query array to any[] if TS complains, but string[] is correct for SDK
 
-  return {
-    data: items.map(mapToWarranty),
-    total,
-    page,
-    limit,
-  };
+    if (result.documents.length === 0) {
+      return { data: [], total: result.total, page, limit };
+    }
+
+    // Batch Fetch Relations
+    const warrantyIds = result.documents.map((d) => d.$id);
+
+    // 1. Fetch Logs for these warranties
+    // Limit logs? If a warranty has 100 logs, fetching all might be too much,
+    // but usually they have few. Let's fetch reasonably.
+    // We can't easily limit "per parent" in one query.
+    // We'll fetch all logs where warrantyId IN [...].
+    const logsResult = await databases.listDocuments(
+      DB_ID,
+      COLLECTIONS.LOCATION_LOGS,
+      [
+        Query.equal("warrantyId", warrantyIds),
+        Query.limit(1000), // Sanity limit
+      ]
+    );
+
+    // 2. Collect all Location IDs
+    const locationIds = new Set<string>();
+
+    // From warranties
+    result.documents.forEach((d) => locationIds.add(d.locationId));
+
+    // From logs
+    logsResult.documents.forEach((l) => {
+      locationIds.add(l.fromLocationId);
+      locationIds.add(l.toLocationId);
+    });
+
+    // 3. Fetch Locations
+    const locationsResult = await databases.listDocuments(
+      DB_ID,
+      COLLECTIONS.LOCATIONS,
+      [
+        Query.equal("$id", Array.from(locationIds)),
+        Query.limit(100), // Sanity limit
+      ]
+    );
+
+    const locMap = new Map(locationsResult.documents.map((l) => [l.$id, l]));
+
+    const data = result.documents.map((doc) =>
+      mapToWarranty(doc, locMap, logsResult.documents)
+    );
+
+    return {
+      data,
+      total: result.total,
+      page,
+      limit,
+    };
+  } catch (error) {
+    console.error("Error fetching warranties:", error);
+    throw error;
+  }
 }
 
 export async function saveWarranty(warranty: Warranty): Promise<void> {
-  await prisma.warranty.create({
-    data: {
-      id: warranty.id,
+  try {
+    await databases.createDocument(DB_ID, COLLECTIONS.WARRANTIES, warranty.id, {
       userId: warranty.userId,
-      invoiceNumber: warranty.invoiceNumber as any,
+      invoiceNumber: warranty.invoiceNumber,
       clientName: warranty.clientName,
       rut: warranty.rut,
       contact: warranty.contact,
@@ -107,49 +160,49 @@ export async function saveWarranty(warranty: Warranty): Promise<void> {
       failureDescription: warranty.failureDescription,
       sku: warranty.sku,
       locationId: warranty.locationId,
-      entryDate: new Date(warranty.entryDate),
+      entryDate: new Date(warranty.entryDate).toISOString(), // ensure ISO format
       deliveryDate: warranty.deliveryDate
-        ? new Date(warranty.deliveryDate)
+        ? new Date(warranty.deliveryDate).toISOString()
         : null,
-      readyDate: warranty.readyDate ? new Date(warranty.readyDate) : null,
+      readyDate: warranty.readyDate
+        ? new Date(warranty.readyDate).toISOString()
+        : null,
       status: warranty.status,
       repairCost: warranty.repairCost,
       notes: warranty.notes,
-    } as any,
-  });
+    });
+  } catch (error) {
+    console.error("Error saving warranty:", error);
+    throw error;
+  }
 }
 
 export async function updateWarranty(
   updatedWarranty: Warranty,
   userId?: string
 ): Promise<void> {
-  const where: any = { id: updatedWarranty.id };
-  if (userId) {
-    where.userId = userId;
-  }
+  // 1. Get current to check ownership and diff
+  const current = await databases.getDocument(
+    DB_ID,
+    COLLECTIONS.WARRANTIES,
+    updatedWarranty.id
+  );
 
-  // 1. Obtener la garantía actual para verificar propiedad y comparar ubicación
-  const currentWarranty = await prisma.warranty.findFirst({
-    where,
-  });
-
-  if (!currentWarranty) {
+  if (userId && current.userId !== userId) {
     throw new Error("No warranty found or access denied");
   }
 
-  // Block modification if completed
-  if (currentWarranty.status === "completed") {
+  if (current.status === "completed") {
     throw new Error("Cannot modify a completed warranty");
   }
 
-  // 2. Preparar operaciones en transacción
-  const operations: any[] = [];
-
-  // Actualización de la garantía
-  const updateOp = prisma.warranty.update({
-    where: { id: updatedWarranty.id },
-    data: {
-      invoiceNumber: updatedWarranty.invoiceNumber as any,
+  // 2. Update Warranty
+  await databases.updateDocument(
+    DB_ID,
+    COLLECTIONS.WARRANTIES,
+    updatedWarranty.id,
+    {
+      invoiceNumber: updatedWarranty.invoiceNumber,
       clientName: updatedWarranty.clientName,
       rut: updatedWarranty.rut,
       contact: updatedWarranty.contact,
@@ -158,60 +211,56 @@ export async function updateWarranty(
       failureDescription: updatedWarranty.failureDescription,
       sku: updatedWarranty.sku,
       locationId: updatedWarranty.locationId,
-      entryDate: new Date(updatedWarranty.entryDate),
+      entryDate: new Date(updatedWarranty.entryDate).toISOString(),
       deliveryDate: updatedWarranty.deliveryDate
-        ? new Date(updatedWarranty.deliveryDate)
+        ? new Date(updatedWarranty.deliveryDate).toISOString()
         : null,
       readyDate: updatedWarranty.readyDate
-        ? new Date(updatedWarranty.readyDate)
+        ? new Date(updatedWarranty.readyDate).toISOString()
         : null,
       status: updatedWarranty.status,
       repairCost: updatedWarranty.repairCost,
       notes: updatedWarranty.notes,
-    } as any,
-  });
-  operations.push(updateOp);
+    }
+  );
 
-  // 3. Verificar cambio de ubicación y crear log
-  if (
-    (currentWarranty as any).locationId !== (updatedWarranty as any).locationId
-  ) {
-    const logOp = (prisma as any).locationLog.create({
-      data: {
-        warrantyId: updatedWarranty.id,
-        fromLocationId: (currentWarranty as any).locationId,
-        toLocationId: (updatedWarranty as any).locationId,
-      },
-    });
-    operations.push(logOp);
+  // 3. Create Log if Location changed
+  if (current.locationId !== updatedWarranty.locationId) {
+    if (
+      updatedWarranty.status === "completed" &&
+      current.status !== "completed"
+    ) {
+      // Skip logic as per original
+    } else {
+      await databases.createDocument(
+        DB_ID,
+        COLLECTIONS.LOCATION_LOGS,
+        ID.unique(),
+        {
+          userId: current.userId, // use owner ID
+          warrantyId: updatedWarranty.id,
+          fromLocationId: current.locationId,
+          toLocationId: updatedWarranty.locationId,
+          changedAt: new Date().toISOString(),
+        }
+      );
+    }
   }
-
-  // 4. Si pasa a completed, ya no generamos log automático.
-  if (
-    updatedWarranty.status === "completed" &&
-    currentWarranty.status !== "completed"
-  ) {
-    // Ya no se crea log aquí
-  }
-
-  // Ejecutar transacción
-  await prisma.$transaction(operations);
 }
 
 export async function deleteWarranty(
   id: string,
   userId?: string
 ): Promise<void> {
-  const where: any = { id };
-  if (userId) {
-    where.userId = userId;
-  }
+  const current = await databases.getDocument(
+    DB_ID,
+    COLLECTIONS.WARRANTIES,
+    id
+  );
 
-  const result = await prisma.warranty.deleteMany({
-    where,
-  });
-
-  if (result.count === 0) {
+  if (userId && current.userId !== userId) {
     throw new Error("No warranty found or access denied");
   }
+
+  await databases.deleteDocument(DB_ID, COLLECTIONS.WARRANTIES, id);
 }

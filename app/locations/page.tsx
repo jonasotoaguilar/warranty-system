@@ -1,7 +1,13 @@
 import { getLocations } from "@/app/actions/locations";
 import LocationsManager from "./locationsManager";
+import { getAuthUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
 export default async function LocationsPage() {
+  const user = await getAuthUser();
+  if (!user) {
+    redirect("/login");
+  }
   const { data: locations, error } = await getLocations();
 
   if (error || !locations) {

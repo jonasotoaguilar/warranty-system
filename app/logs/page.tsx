@@ -1,8 +1,14 @@
 import { getLocationLogs } from "@/app/actions/logs";
 import { getLocations } from "@/app/actions/locations";
 import LogsManager from "./logsManager";
+import { getAuthUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
 export default async function LogsPage() {
+  const user = await getAuthUser();
+  if (!user) {
+    redirect("/login");
+  }
   const [logsResult, locationsResult] = await Promise.all([
     getLocationLogs({ page: 1, limit: 20 }),
     getLocations(false),
