@@ -162,11 +162,12 @@ export function WarrantyModal({
               </label>
               <Input
                 id="entry-date"
-                type="datetime-local"
+                type="date"
                 required
+                max={new Date().toISOString().split("T")[0]}
                 value={
                   formData.entryDate
-                    ? new Date(formData.entryDate).toISOString().slice(0, 16)
+                    ? new Date(formData.entryDate).toISOString().split("T")[0]
                     : ""
                 }
                 onChange={(e) => {
@@ -175,11 +176,50 @@ export function WarrantyModal({
                     setFormData({ ...formData, entryDate: undefined });
                     return;
                   }
-                  const date = new Date(val);
-                  if (!isNaN(date.getTime())) {
+
+                  // Logic: If today, use current time. If past, use 10:00 AM.
+                  const selectedDate = new Date(val + "T00:00:00");
+                  const now = new Date();
+
+                  // Reset hours to compare just dates
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+
+                  // Adjust for timezone offset to ensure correct "local" date comparison
+                  // or simpler: compare date strings
+                  const isToday = val === now.toISOString().split("T")[0];
+
+                  if (isToday) {
+                    // Use current time
+                    const dateWithCurrentTime = new Date(val);
+                    dateWithCurrentTime.setHours(
+                      now.getHours(),
+                      now.getMinutes(),
+                      now.getSeconds()
+                    );
+                    // Adjust for local timezone offset when creating from YYYY-MM-DD
+                    // But actually new Date(val) treats it as UTC usually for 'YYYY-MM-DD'?
+                    // Let's use reliable construction
+                    const [y, m, d] = val.split("-").map(Number);
+                    const finalDate = new Date(
+                      y,
+                      m - 1,
+                      d,
+                      now.getHours(),
+                      now.getMinutes(),
+                      now.getSeconds()
+                    );
                     setFormData({
                       ...formData,
-                      entryDate: date.toISOString(),
+                      entryDate: finalDate.toISOString(),
+                    });
+                  } else {
+                    // Use 10:00 AM
+                    const [y, m, d] = val.split("-").map(Number);
+                    const finalDate = new Date(y, m - 1, d, 10, 0, 0);
+                    setFormData({
+                      ...formData,
+                      entryDate: finalDate.toISOString(),
                     });
                   }
                 }}
