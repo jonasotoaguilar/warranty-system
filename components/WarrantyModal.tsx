@@ -151,8 +151,8 @@ export function WarrantyModal({
       title={warrantyToEdit ? "Editar Garantía" : "Nueva Garantía"}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-4 p-3 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-zinc-50/50 dark:bg-zinc-900/30">
-          {!isEditing && (
+        {!isEditing && (
+          <div className="space-y-4 p-3 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-zinc-50/50 dark:bg-zinc-900/30">
             <div className="grid gap-2 text-zinc-900 dark:text-zinc-100 mb-4">
               <label
                 htmlFor="entry-date"
@@ -224,56 +224,52 @@ export function WarrantyModal({
                 }}
               />
             </div>
-          )}
-          {!isEditing && (
-            <>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2 text-zinc-900 dark:text-zinc-100">
-                  <label
-                    htmlFor="invoice-number"
-                    className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
-                  >
-                    N° Boleta *
-                  </label>
-                  <Input
-                    id="invoice-number"
-                    required
-                    autoFocus
-                    disabled={isLocked || isEditing}
-                    placeholder="123456"
-                    value={formData.invoiceNumber || ""}
-                    maxLength={20}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        invoiceNumber: e.target.value || undefined,
-                      })
-                    }
-                  />
-                </div>
-                <div className="grid gap-2 text-zinc-900 dark:text-zinc-100">
-                  <label
-                    htmlFor="sku"
-                    className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
-                  >
-                    SKU *
-                  </label>
-                  <Input
-                    id="sku"
-                    required
-                    disabled={isLocked || isEditing}
-                    placeholder="Código producto"
-                    value={formData.sku || ""}
-                    maxLength={20}
-                    onChange={(e) =>
-                      setFormData({ ...formData, sku: e.target.value })
-                    }
-                  />
-                </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2 text-zinc-900 dark:text-zinc-100">
+                <label
+                  htmlFor="invoice-number"
+                  className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                >
+                  N° Boleta *
+                </label>
+                <Input
+                  id="invoice-number"
+                  required
+                  autoFocus
+                  disabled={isLocked || isEditing}
+                  placeholder="123456"
+                  value={formData.invoiceNumber || ""}
+                  maxLength={20}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      invoiceNumber: e.target.value || undefined,
+                    })
+                  }
+                />
               </div>
-            </>
-          )}
-        </div>
+              <div className="grid gap-2 text-zinc-900 dark:text-zinc-100">
+                <label
+                  htmlFor="sku"
+                  className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                >
+                  SKU *
+                </label>
+                <Input
+                  id="sku"
+                  required
+                  disabled={isLocked || isEditing}
+                  placeholder="Código producto"
+                  value={formData.sku || ""}
+                  maxLength={20}
+                  onChange={(e) =>
+                    setFormData({ ...formData, sku: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {!isEditing && (
           <div className="space-y-4 p-3 border border-zinc-200 dark:border-zinc-800 rounded-lg bg-zinc-50/50 dark:bg-zinc-900/30">
