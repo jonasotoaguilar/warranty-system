@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { getLocations } from "@/app/actions/locations";
+import { logout } from "@/app/actions/auth";
 import { Warranty, WarrantyStatus } from "@/lib/types";
 import { WarrantyTable } from "./WarrantyTable";
 import { WarrantyModal } from "./WarrantyModal";
@@ -164,8 +165,8 @@ export function WarrantyDashboard() {
           </Button>
           <Button
             variant="outline"
-            onClick={() => {
-              globalThis.location.href = "/api/auth/logout";
+            onClick={async () => {
+              await logout();
             }}
             className="bg-zinc-100 text-zinc-950 hover:bg-zinc-200 border-zinc-200 dark:bg-zinc-900 dark:text-zinc-50 dark:hover:bg-zinc-800 dark:border-zinc-800 ml-auto sm:ml-0"
           >
